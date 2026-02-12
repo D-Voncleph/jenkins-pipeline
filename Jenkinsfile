@@ -2,22 +2,26 @@ pipeline {
     agent any
 
     stages {
-        // Stage 1: Verify the code is here
         stage('Cloning Code') {
             steps {
-                echo 'Step 1: Cloning and verifying repository...'
-                // Jenkins automatically clones the code before the pipeline starts.
-                // We will list the files to prove it is there.
-                sh 'ls -la'
+                echo 'Checking out source code...'
+                checkout scm
             }
         }
 
-        // Stage 2: Run the dummy tests
         stage('Running Tests') {
             steps {
-                echo 'Step 2: Initiating Test Suite...'
-                // This is where you would normally run 'npm test' or 'pytest'
-                sh 'echo "Tests passed!"'
+                echo 'Simulating tests...'
+                sh 'echo "Tests Passed!"'
+            }
+        }
+
+        // NEW STAGE ADDED HERE
+        stage('Build Docker Image') {
+            steps {
+                echo 'Building the Docker image...'
+                // Replace 'voncleph' with your actual Docker Hub username!
+                sh 'docker build -t voncleph/fintech-app:v1 .'
             }
         }
     }
