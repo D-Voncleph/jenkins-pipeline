@@ -4,8 +4,13 @@ pipeline {
     stages {
         stage('Cloning Code') {
             steps {
-                echo 'Checking out source code...'
-                checkout scm
+                echo 'Fetching the Application Source Code...'
+                // 🔴 OLD: checkout scm
+                // 🟢 NEW: Pull the ACTUAL App Code from your fintech repo
+                git branch: 'main', url: 'https://github.com/D-Voncleph/fintech-app-docker.git'
+                
+                // Verify that Dockerfile is now present
+                sh 'ls -la'
             }
         }
 
@@ -16,11 +21,10 @@ pipeline {
             }
         }
 
-        // NEW STAGE ADDED HERE
         stage('Build Docker Image') {
             steps {
                 echo 'Building the Docker image...'
-                // Replace 'voncleph' with your actual Docker Hub username!
+                // This will now work because we downloaded the code above!
                 sh 'docker build -t voncleph/fintech-app:v1 .'
             }
         }
