@@ -20,7 +20,7 @@ pipeline {
         stage('Running Tests') {
             steps {
                 echo 'Simulating tests...'
-                sh 'echo "Tests Passed!"'
+                sh 'echo "Simulating a critical test failure!"; exit 1'
             }
         }
 
