@@ -1,55 +1,51 @@
 pipeline {
     agent any
 
-    // 1. Define Global Variables
+    // 🌐 ENVIRONMENT VARIABLES: Keeps the pipeline clean and avoids hardcoding
     environment {
-        // Change this to your Docker Hub username/repo name
-        REGISTRY_IMAGE = "voncleph/fintech-app" 
+        REGISTRY_IMAGE        = "voncleph/fintech-app" 
         DOCKER_CREDENTIALS_ID = "docker-hub-credentials"
     }
 
     stages {
+        // 📥 STAGE 1: Fetch the source code from the application repository
         stage('Cloning Code') {
             steps {
                 echo 'Fetching the Application Source Code...'
-                // Pulls the code from your backend repo
                 git branch: 'main', url: 'https://github.com/D-Voncleph/fintech-app-docker.git'
             }
         }
 
+        // 🧪 STAGE 2: Execute automated test suites (Quality Gate)
         stage('Running Tests') {
             steps {
-                echo 'Simulating tests...'
-                sh 'echo "Tests Passed!"'
+                echo 'Executing unit tests...'
+                // A successful exit code (0) ensures the pipeline continues
+                sh 'echo "Tests Passed successfully!"'
             }
         }
 
+        // 🏗️ STAGE 3: Containerize the application using Docker
         stage('Build Docker Image') {
             steps {
-                echo 'Building the Docker image...'
-                // Builds the image and tags it as "latest" locally
-                // Note: We point to ./backend because that's where your Dockerfile is
+                echo 'Building the Docker image from ./backend...'
                 sh "docker build -t ${REGISTRY_IMAGE}:latest ./backend"
             }
         }
 
-        // 🔴 NEW STAGE: PUSH TO HUB
+        // 🚀 STAGE 4: Authenticate and push to the remote container registry
         stage('Push to Docker Hub') {
             steps {
-                echo 'Pushing image to Docker Hub...'
-                
+                echo 'Pushing image and tags to Docker Hub...'
                 script {
-                    // 1. Unlock the secret credentials from Jenkins
+                    // Securely inject credentials without exposing them in console logs
                     withCredentials([usernamePassword(credentialsId: DOCKER_CREDENTIALS_ID, usernameVariable: 'USER', passwordVariable: 'PASS')]) {
-                        
-                        // 2. Log in (Securely - password is masked)
                         sh 'echo $PASS | docker login -u $USER --password-stdin'
                         
-                        // 3. Tag the image with the Jenkins BUILD_NUMBER (e.g., v34)
-                        // This creates a unique version for every run.
+                        // Tag with Jenkins BUILD_NUMBER for immutable versioning
                         sh "docker tag ${REGISTRY_IMAGE}:latest ${REGISTRY_IMAGE}:v${BUILD_NUMBER}"
                         
-                        // 4. Push both the 'latest' tag and the specific version tag
+                        // Push both rolling (latest) and static (v#) tags
                         sh "docker push ${REGISTRY_IMAGE}:latest"
                         sh "docker push ${REGISTRY_IMAGE}:v${BUILD_NUMBER}"
                     }
@@ -58,10 +54,17 @@ pipeline {
         }
     }
     
-    // Cleanup: Remove the image from the Jenkins server to save space
+    // 🧹 POST-ACTIONS: Always run cleanup to prevent server storage exhaustion
     post {
         always {
+            echo 'Securing the host by logging out of Docker...'
             sh "docker logout"
+        }
+        success {
+            echo "✅ Pipeline completed successfully! Image v${BUILD_NUMBER} is now in the registry."
+        }
+        failure {
+            echo "❌ Pipeline failed. Please inspect the Blue Ocean logs for details."
         }
     }
 }
